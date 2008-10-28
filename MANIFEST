@@ -1,0 +1,9 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/01-ini-quote-pod-examples.t
+t/02-ini-functions.t
+t/03-ini-escapes.t
+lib/Config/Ini/Quote.pm
+META.yml                                 Module meta-data (added by MakeMaker)
