@@ -66,11 +66,12 @@ my $s = "<&>'\"\x00\x07\x08\x09\x0a\x0b\x0c\x0d\x1b\\\x85\xa0\x{2028}\x{2029}";
 is( $e, q{<&>'"\0\a\b\t\n\v\f\r\e\\\\\N\_\L\P},
     'escape_for_double_quoted'.' ('.__LINE__.')' );
 
+# changed ' to &#39; presumably because of change in HTML::Entities
 $e = escape_for_double_quoted( $s, ':html' );
-is( $e, qq{&lt;&amp;&gt;'&quot;&#0;&#7;&#8;\t\n&#11;&#12;\r&#27;\\&#133;&nbsp;&#x2028;&#x2029;}, 'escape_for_double_quoted'.' ('.__LINE__.')' ); # note: qq
+is( $e, qq{&lt;&amp;&gt;&#39;&quot;&#0;&#7;&#8;\t\n&#11;&#12;\r&#27;\\&#133;&nbsp;&#x2028;&#x2029;}, 'escape_for_double_quoted'.' ('.__LINE__.')' ); # note: qq
 
 $e = escape_for_double_quoted( $s, ':slash:html' );
-is( $e, q{&lt;&amp;&gt;'&quot;&#0;&#7;&#8;\t\n&#11;&#12;\r&#27;\\\\&#133;&nbsp;&#x2028;&#x2029;}, 'escape_for_double_quoted'.' ('.__LINE__.')' ); # note: q
+is( $e, q{&lt;&amp;&gt;&#39;&quot;&#0;&#7;&#8;\t\n&#11;&#12;\r&#27;\\\\&#133;&nbsp;&#x2028;&#x2029;}, 'escape_for_double_quoted'.' ('.__LINE__.')' ); # note: q
 
 my $smiley;
              $smiley = unescape_for_double_quoted( '\t"smiley":\u263a\n' );
@@ -233,12 +234,12 @@ __
                     herestyle => '{}', quote   => 'double',
                     escape    => ':html' );
                 # {"EOT:chomp:html"
-                # vis-&agrave;-vis Beyonc&eacute;'s na&iuml;ve
+                # vis-&agrave;-vis Beyonc&eacute;&#39;s na&iuml;ve
                 #   papier-m&acirc;ch&eacute; r&eacute;sum&eacute;
                 # }EOT
 is( $e, <<'__', 'as_heredoc'.' ('.__LINE__.')' );
 {"EOT:chomp:html"
-vis-&agrave;-vis Beyonc&eacute;'s na&iuml;ve
+vis-&agrave;-vis Beyonc&eacute;&#39;s na&iuml;ve
 	papier-m&acirc;ch&eacute; r&eacute;sum&eacute;
 }EOT
 __
@@ -248,12 +249,12 @@ __
                     herestyle => '{}', quote   => 'double',
                     escape    => ':html:slash' );
                 # {"EOT:chomp:html:slash"
-                # vis-&agrave;-vis Beyonc&eacute;'s na&iuml;ve
+                # vis-&agrave;-vis Beyonc&eacute;&#39;s na&iuml;ve
                 # \tpapier-m&acirc;ch&eacute; r&eacute;sum&eacute;
                 # }EOT
 is( $e, <<'__', 'as_heredoc'.' ('.__LINE__.')' );
 {"EOT:chomp:html:slash"
-vis-&agrave;-vis Beyonc&eacute;'s na&iuml;ve
+vis-&agrave;-vis Beyonc&eacute;&#39;s na&iuml;ve
 	papier-m&acirc;ch&eacute; r&eacute;sum&eacute;
 }EOT
 __
