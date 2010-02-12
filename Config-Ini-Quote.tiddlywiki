@@ -1,0 +1,332 @@
+!NAME
+Config::Ini::Quote - Quoting strings for Config::Ini modules
+
+!SYNOPSIS
+{{{
+  use Config::Ini::Quote ':escape';
+  
+  binmode(STDOUT, ":utf8");
+  my $smiley = qq{\t"smiley":\x{263a}\n};
+  
+  $smiley = escape_for_double_quoted( $smiley );
+  print $smiley; # literally: \t"smiley":\u263A\n
+  
+  $smiley = unescape_for_double_quoted( $smiley );
+  print $smiley; # same as: print qq{\t"smiley":\x{263a}\n};
+ 
+  use Config::Ini::Quote ':all';
+  
+  print as_double_quoted( $smiley );
+  # literally: "\t\"smiley\":\u263A\n"
+  
+  print as_single_quoted( $smiley );
+  # same as: print qq{'\t"smiley":\x{263a}\n'};
+  
+  print as_heredoc( value => $smiley,
+      heretag => 'EOT', quote => '"' );
+  # literally:
+  # <<"EOT"
+  # \t"smiley":\u263A
+  # EOT
+  
+  $smiley =~ s/"/\\"/g; # prepare for parse
+  print parse_double_quoted( qq{"$smiley"} );
+  # same as: print qq{\t"smiley":\x{263a}\n};
+  
+  print parse_single_quoted( "'''Hello, World.'''" );
+  # 'Hello, World.'
+}}}
+
+!VERSION
+VERSION: 1.01
+
+!DESCRIPTION
+This module is designed to provide backslash-escaped character support for the Config::Ini::Edit and Config::Ini::Expanded modules.
+
+If requested, it will also interpret HTML entities in double quoted strings (using HTML::Entities).
+
+!FUNCTIONS
+No functions are exported by default. The following are exported with {{{':escape'}}}, e.g.
+
+{{{
+ Use Config::Ini::Quote qw( :escape );
+ 
+ unescape_for_double_quoted()
+ escape_for_double_quoted()
+}}}
+
+All functions can be exported with {{{':all'}}}, e.g.,
+
+{{{
+ Use Config::Ini::Quote qw( :all );
+}}}
+
+!!escape_for_double_quoted( $to_escape, $escape )
+Escapes unprintable and unicode characters.
+
+{{{
+ my $e = escape_for_double_quoted( $s );
+}}}
+
+The parameter, $escape, may contain any combination of these strings: {{{':slash'}}}, {{{':html'}}}. If $escape is false (e.g., {{{undef}}} or {{{''}}}), the default is {{{':slash'}}}, which encodes the following characters:
+
+{{{
+ "\x00" as \0     (null)
+ "\x07" as \a     (bell)
+ "\x08" as \b     (backspace)
+ "\x09" as \t     (tab)
+ "\x0a" as \n     (new line)
+ "\x0b" as \v     (vertical tab)
+ "\x0c" as \f     (form feed)
+ "\x0d" as \r     (carriage return)
+ "\x1b" as \e     (ascii escape)
+ '\\'   as \\     (escaped backslash)
+ "\x85" as \N     (Unicode next line)
+ "\xa0" as \_     (Unicode non-breaking space)
+ "\x{2028}" as \L (Unicode line separator)
+ "\x{2029}" as \P (Unicode paragraph separator)
+}}}
+
+Other unprintable characters are encoded as {{{'\xXX'}}}, and (wide) Unicode characters as {{{'\uXXXX'}}}, where {{{'XX'}}} and {{{'XXXX'}}} are the hex code for the character.
+
+If {{{$escape}}} matches {{{/:html/}}}, the string is first encoded using HTML::entities::encode's defaults, i.e., it will encode control chars, high-bit chars, and the {{{'<'}}}, {{{'&'}}}, {{{'>'}}}, {{{"'"}}} and {{{'"'}}} characters. If {{{$escape}}} also matches {{{/:slash/}}}, then any remaining characters from the above table, e.g., {{{'\n'}}}, {{{'\t'}}}, etc., will be encoded as above.
+
+!!unescape_for_double_quoted( $to_unescape, $escape );
+Converts escaped text to actual characters.
+
+{{{
+ $smiley = unescape_for_double_quoted( '\t"smiley":\u263a\n' );
+}}}
+
+The parameter, {{{$escape}}}, may contain any combination of these strings: {{{':slash'}}}, {{{':html'}}}, as described in {{{escape_for_double_quoted()}}} above. By default, the codes in the above table, e.g., {{{'\n'}}}, {{{'\t'}}}, etc., and codes of the form {{{'\xXX'}}}, {{{'\xXXXX'}}}, and {{{'\uXXXX'}}} will be decoded to their actual characters. (Note that {{{'\xXXXX'}}} is accepted as a synonym for {{{'\uXXXX'}}}.)
+
+If {{{$escape}}} matches {{{/:html/}}}, HTML entities will be decoded using HTML::Entities::decode's defaults. If {{{$escape}}} also matches {{{/:slash/}}}, then other codes, e.g., {{{'\n'}}}, {{{'\t'}}}, etc., will be decoded, too.
+
+If you use {{{':html'}}}, the default escaping technique, {{{':slash'}}}, will be disabled unless you explicitly include it, too, e.g., {{{$escape eq ':html:slash'}}}.
+
+!!as_double_quoted( $to_quote, $escape )
+Double quotes a string -- with character escapes; double quotes are escaped as {{{\"}}}.
+
+{{{
+ $e = as_double_quoted( $s );
+}}}
+
+Characters in the string will be escaped using {{{escape_for_double_quoted()}}} as described above, including how the {{{$escape}}} parameter works. Double quotes in the string will be escaped as {{{'\"'}}}. The value returned will begin and end with a double quote {{{'"'}}}.
+
+!!as_single_quoted( $to_quote )
+Single quotes a string -- without character escapes; single quotes are escaped by doubling: {{{"''"}}}. The value returned will begin and end with a single quote {{{"'"}}}.
+
+{{{
+ $e = as_single_quoted( $s );
+}}}
+
+!!as_heredoc( ... )
+{{{
+ as_heredoc(
+    value     => $value,
+    heretag   => $heretag,
+    herestyle => $herestyle,
+    quote     => $quote,
+    escape    => $escape,
+    indented  => $indented,
+    comment   => $comment,
+    extra     => $extra
+    );
+}}}
+
+'Quotes' a string using heredoc notation.
+
+{{{
+ $s = qq{\t"smiley":\x{263a}\n};
+ $e = as_heredoc(
+          value     => $s,   heretag => 'EOT',
+          herestyle => '<<', quote   => '"' );
+ # <<"EOT"
+ # \t"smiley":\u263A
+ # EOT
+}}}
+
+The {{{'heretag'}}} parameter is the heredoc tag for the begin and end. If null, the 'tagless' style is used, e.g.,
+
+{{{
+ $e = as_heredoc( value => $s, quote => '"' );
+ # <<""
+ # \t"smiley":\u263A
+ # <<
+}}}
+
+The {{{'herestyle'}}} parameter is one of: {{{'<<'}}}, {{{'<<<<'}}}, {{{'{'}}}, or {{{'{}'}}}. The default is {{{'<<'}}}. Examples may explain best:
+
+{{{
+ $e = as_heredoc(
+     value => "Hey\n", heretag => 'EOT',
+     herestyle => '<<' );  # the default
+ # <<EOT
+ # Hey
+ # EOT
+ 
+ $e = as_heredoc(
+     value => "Hey\n", heretag => 'EOT',
+     herestyle => '<<<<' );
+ # <<EOT
+ # Hey
+ # <<EOT
+ 
+ $e = as_heredoc(
+     value => "Hey\n", heretag => 'EOT',
+     herestyle => '{' );
+ # {EOT
+ # Hey
+ # EOT
+ 
+ $e = as_heredoc(
+     value => "Hey\n", heretag => 'EOT',
+     herestyle => '{}' );
+ # {EOT
+ # Hey
+ # }EOT
+}}}
+
+The {{{'quote'}}} parameter should match {{{'/^\s*["d's]/i'}}}, e.g., {{{quote => '"'}}}, {{{quote => 'double'}}} (double quote), {{{quote => "'"}}}, {{{quote => 'single'}}} (single quote).
+
+Unlike Perl's heredocs, if {{{'quote'}}} is not specified, single quote is the default.
+
+If double quote, the text in the heredoc is escaped using {{{escape_for_double_quoted()}}}, except that {{{"\n"}}} and {{{"\t"}}} and double quotes are not escaped. A double quote is placed around the tag and modifiers.
+
+{{{
+ $s = qq{one\t"fish"\ntwo\t'fish'\n};
+ $e = as_heredoc( value => $s, heretag => 'EOT', quote => '"' );
+ # <<"EOT"
+ # one  "fish"
+ # two  'fish'
+ # EOT
+}}}
+
+If single quote or no quote (single quote implicit), the text is left alone. Single quotes in the string are not escaped. If single quote is explicit, a single quote is placed around the tag and modifiers.
+
+{{{
+ $e = as_heredoc( value => $s, heretag => 'EOT', quote => "'" );
+ # <<'EOT'
+ # one  "fish"
+ # two  'fish'
+ # EOT
+ 
+ $e = as_heredoc( value => $s, heretag => 'EOT' );
+ # <<EOT
+ # one  "fish"
+ # two  'fish'
+ # EOT
+}}}
+
+Whether single or double quoted, if the string does not end with a newline, the :chomp modifier is added
+
+{{{
+ chomp $s;
+ $e = as_heredoc( value => $s, heretag => 'EOT' );
+ # <<EOT:chomp
+ # one  "fish"
+ # two  'fish'
+ # EOT
+}}}
+
+The {{{'escape'}}} parameter is the same as described in {{{escape_for_double_quoted()}}} above, i.e., it contains {{{':slash'}}} and/or {{{':html'}}}, defaulting to {{{':slash'}}}. It is recognized only with double quotes. The value of {{{'escape'}}} is appended to the heredoc tag, so the same types of quote escapes to be honored when the Ini file is read later.
+
+{{{
+ $s = "vis-à-vis Beyoncé's naïve\n" .
+     "\tpapier-mâché résumé";
+ $e = as_heredoc(
+     value     => $s,   heretag => 'EOT',
+     herestyle => '{}', quote   => 'double',
+     escape    => ':slash' );
+ # {"EOT:chomp:slash"
+ # vis-\xE0-vis Beyonc\xE9's na\xEFve
+ # \tpapier-m\xE2ch\xE9 r\xE9sum\xE9
+ # }EOT
+ 
+ $e = as_heredoc(
+     value     => $s,   heretag => 'EOT',
+     herestyle => '{}', quote   => 'double',
+     escape    => ':html' );
+ # {"EOT:chomp:html"
+ # vis-&agrave;-vis Beyonc&eacute;'s na&iuml;ve
+ #      papier-m&acirc;ch&eacute; r&eacute;sum&eacute;
+ # }EOT
+ 
+ $e = as_heredoc(
+     value     => $s,   heretag => 'EOT',
+     herestyle => '{}', quote   => 'double',
+     escape    => ':html:slash' );
+ # {"EOT:chomp:html:slash"
+ # vis-&agrave;-vis Beyonc&eacute;'s na&iuml;ve
+ # \tpapier-m&acirc;ch&eacute; r&eacute;sum&eacute;
+ # }EOT
+}}}
+
+The {{{'indented'}}} parameter will indent the value. If {{{'indented'}}} is whitespace, e.g., {{{'indented' => "\t"}}}, then that value will be inserted at the beginning of each line. Otherwise, if {{{'indented'}}} is true, then four spaces will be inserted.
+
+{{{
+ $e = as_heredoc(
+     value => "The quick brown fox\n" .
+         "jumped over the lazy dog",
+     indented => 1 );
+ # <<:indented
+ #     The quick brown fox
+ #     jumped over the lazy dog
+ # <<
+}}}
+
+The {{{'comment'}}} parameter provides for a comment on the same line as the beginning of the heredoc. A comment is only allowed if there are quotes, so if quote is not given, the {{{'comment'}}} parameter is silently ignored.
+
+If the comment does not begin with {{{'#'}}} or {{{';'}}}, {{{'# '}}} will be added to it.
+
+{{{
+ $e = as_heredoc( value => "Hey", heretag => 'EOT',
+     quote => "'", comment => 'This is a comment' );
+ # <<'EOT:chomp' # This is a comment
+ # Hey
+ # EOT
+}}}
+
+The {{{'extra'}}} parameter allows you to pass along to {{{as_heredoc()}}} any modifiers that you want it to include, whether or not {{{as_heredoc()}}} recognizes them.
+
+The value of extra will be added to any other modifiers that {{{as_heredoc()}}} would normally include.
+
+{{{
+ $e = as_heredoc( value => '{"a":1,"b":2,"c":3}',
+     extra => ':json' );
+ # <<:chomp:json
+ # {"a":1,"b":2,"c":3}
+ # <<
+}}}
+
+In the above example {{{':json'}}} is not a modifier that Config::Ini::Quote recognizes. But Config::Ini::Edit does, and {{{as_heredoc()}}} passes it along.
+
+!!parse_double_quoted( $to_parse, $types )
+Parses a double-quoted string, unescaping escaped characters.
+
+{{{
+ $s = parse_double_quoted( q{"\t\\"smiley\\":\\u263a\n"} );
+}}}
+
+It expects the value to begin and end with double quotes; other double quotes must be escaped {{{\"}}}.
+
+!!parse_single_quoted( $to_parse )
+Parses a single-quoted string; recognizes no escapes except doubled single quotes: {{{''}}}.
+
+{{{
+ $s = parse_single_quoted( "'''Hello, World.'''" );
+}}}
+
+It expects the value to begin and end with single quotes; other single quotes must be escaped {{{"''"}}}.
+
+!SEE ALSO
+Config::Ini::Edit, Config::Ini::Expanded
+
+!AUTHOR
+Brad Baxter, <bmb@mail.libs.uga.edu>
+
+!COPYRIGHT AND LICENSE
+Copyright (C) 2010 by Brad Baxter
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.8.7 or, at your option, any later version of Perl 5 you may have available.
+

@@ -2,6 +2,7 @@ Changes
 Makefile.PL
 MANIFEST
 README
+Config-Ini-Quote.tiddlywiki
 t/01-ini-quote-pod-examples.t
 t/02-ini-functions.t
 t/03-ini-escapes.t

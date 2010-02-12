@@ -95,11 +95,11 @@ our %EXPORT_TAGS = (
 
 =head1 VERSION
 
-VERSION: 1.00
+VERSION: 1.01
 
 =cut
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 # more POD after the __END__
 
@@ -398,7 +398,7 @@ C<$escape eq ':html:slash'>.
 
 =head2 as_double_quoted( $to_quote, $escape )
 
-Double quotes a string--with character escapes; double quotes are
+Double quotes a string -- with character escapes; double quotes are
 escaped as C<\">.
 
  $e = as_double_quoted( $s );
@@ -411,7 +411,7 @@ double quote C<'"'>.
 
 =head2 as_single_quoted( $to_quote )
 
-Single quotes a string--without character escapes; single quotes are
+Single quotes a string -- without character escapes; single quotes are
 escaped by doubling: C<"''">.  The value returned will begin and end
 with a single quote C<"'">.
 
@@ -636,7 +636,7 @@ Brad Baxter, E<lt>bmb@mail.libs.uga.eduE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2008 by Brad Baxter
+Copyright (C) 2010 by Brad Baxter
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself, either Perl version 5.8.7 or, at
